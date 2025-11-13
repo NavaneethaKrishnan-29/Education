@@ -17,8 +17,40 @@ def travel(message,history):
     response=ollama.chat(model='qwen2.5:0.5b',messages=messages)
     return response['message']['content']
 gr.ChatInterface(fn=travel,title="herwin",theme="soft").launch()
-        
-        
+
+
+
+
+import gradio as gr
+import ollama
+from pypdf import PdfReader
+
+def sum(pdf):
+    if pdf is None:
+        return "Upload the file"
+
+    reader = PdfReader(pdf.name)
+    text = ""
+    for p in reader.pages:
+        text += p.extract_text()+"\n"
+
+    text=text[:4000]
+
+    prompt = f"Summarize this pdf content {text}"
+
+    resp = ollama.chat(
+        model = "qwen2.5:0.5b",
+        messages = [{"role":"user","content":prompt}]
+    )
+
+    return resp["message"]["content"]
+
+gr.Interface(
+    fn=sum,
+    inputs=gr.File(label="Upload the file"),
+    outputs=gr.Textbox(label="Summary",lines=8),
+    title = "Summarizer"
+).launch()
         
 EXP 1:
 git init 
@@ -472,4 +504,5 @@ In this lab, you learned how to:
 4. Expose Deployments as services.
 
 5. Clean up resources safely.
+
 
