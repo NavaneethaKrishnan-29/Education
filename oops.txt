@@ -14,6 +14,24 @@ gr.Interface(
     description="Generate professional blog articles with Qwen 2.5."
 ).launch()
 
+"Summarize the given news article in 3–5 bullet points, highlight key facts, mention the involved entities, and generate a short headline."
+"Write a detailed blog post on the topic '{topic}'. Use simple language, add headings, real-world examples, and end with a conclusion."
+"Analyze the sentiment of this comment: '{topic}'. Classify it as Positive, Negative, or Neutral and provide a brief explanation."
+"Based on the following student details: '{topic}', identify performance level, suggest study improvements, and recommend daily routines."
+"Answer the user’s question about movies: '{topic}'. Provide accurate info about cast, genre, plot, or recommendations."
+"Analyze this product review: '{topic}'. Extract sentiments, key issues, positives, and an overall summary."
+"Recommend top travel destinations based on the user's interest: '{topic}'. Include reasons, best season, and budget estimate."
+"Recommend 5 books related to the topic '{topic}' and explain briefly why each book matches the reader’s interest."
+"Evaluate this resume text: '{topic}'. Identify strengths, weaknesses, missing skills, and provide improvement suggestions."
+
+reviews_df = pd.DataFrame({
+    "product": ["Phone", "Headphones", "Laptop"],
+    "review": [
+        "Good performance and battery life.",
+        "Decent sound quality.",
+        "Heating issue after long use."
+    ]
+})
 ====================================================
 
 Exp1:
@@ -523,4 +541,5 @@ if __name__ == "__main__":
         print("\nAssistant Response:\n")
         print(medical_assistant(user_input))
         print("\n" + "=" * 60 + "\n")
+
 
