@@ -1,0 +1,526 @@
+import gradio as gr
+import ollama
+
+def generate_blog(topic):
+    prompt = f"Recommend 5 movies, books, or products similar to '{topic}' and explain briefly why each suits the user."
+    resp = ollama.chat(model="qwen2.5:0.5b", messages=[{"role": "user", "content": prompt}])
+    return resp["message"]["content"]
+
+gr.Interface(
+    fn=generate_blog,
+    inputs=gr.Textbox(label="Enter Blog Topic"),
+    outputs=gr.Textbox(label="Generated Blog Content", lines=12),
+    title="✍ AI-Powered Blog Content Generator",
+    description="Generate professional blog articles with Qwen 2.5."
+).launch()
+
+====================================================
+
+Exp1:
+
+import ollama
+client = ollama.Client()
+model = "llama2"
+while True:
+    prompt = input("Enter your Query: ")
+    if prompt.lower() == "exit":
+        print("Bye")
+        break
+       
+    response = client.generate(model=model, prompt=prompt)
+    print("Response from Ollama:")
+    print(response.response)
+
+=======================================================
+
+Exp2:
+
+faq_data = [
+    {"question": "How can I track my order?", "answer": "You can track your order by logging into your account and clicking on 'Track Order'."},
+    {"question": "What is the return policy?", "answer": "You can return most items within 30 days of delivery for a full refund."},
+    {"question": "Do you ship internationally?", "answer": "Yes, we ship to over 100 countries worldwide."},
+    {"question": "What payment methods are accepted?", "answer": "We accept credit cards, debit cards, PayPal, and UPI."},
+    {"question": "How do I cancel my order?", "answer": "You can cancel your order before it is shipped from your 'My Orders' page."}
+]
+
+import requests
+
+def ask_ollama(prompt, model="qwen2.5:0.5b"):
+    url = "http://localhost:11434/api/generate"
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False
+    }
+    response = requests.post(url, json=payload)
+    return response.json()['response']
+
+def faq_chatbot(user_question):
+    prompt = (
+        "You are an e-commerce FAQ assistant.\n"
+        "You can only answer using the following FAQs exactly as they are written.\n"
+        "If the user's question does not match any FAQ, say exactly: 'I don't know.'\n\n"
+        "FAQs:\n"
+    )
+
+    for item in faq_data:
+        prompt += f"Q: {item['question']}\nA: {item['answer']}\n\n"
+
+    prompt += f"User question: {user_question}\nAnswer:"
+    answer = ask_ollama(prompt)
+    return answer.strip()
+
+while True:
+    user_input = input("Ask your question (type 'exit' to quit): ")
+    if user_input.lower() == "exit":
+        break
+    print("Chatbot:", faq_chatbot(user_input))
+
+====================================================
+
+Exp3:
+
+import ollama
+
+def generate_blog_post(outline):
+    response = ollama.chat(model='qwen2.5:0.5b', messages=[
+        {"role": "system", "content": "You are a professional blog writer."},
+        {"role": "user", "content": f"Create a detailed blog post based on this outline:\n{outline}"}
+    ])
+    return response['message']['content']
+
+user_outline = input("Please enter the outline for the blog post:\n")
+blog_post = generate_blog_post(user_outline)
+print("\nGenerated Blog Post:\n", blog_post)
+
+====================================================
+Exp4:
+import ollama
+
+past_examples = [
+    {
+        "customer": "My order #84721 arrived with a cracked mug. What should I do?",
+        "agent": "I’m sorry about the damaged mug. I can arrange a free replacement or a refund. Please confirm your preference and share a photo so I can process it right away."
+    },
+    {
+        "customer": "I was charged twice for my subscription this month.",
+        "agent": "Thanks for reaching out. I see two charges on your account. I’ve initiated a refund for the duplicate payment; it should reflect in 3–5 business days."
+    },
+    {
+        "customer": "The tracking shows delivered but I didn’t receive my package.",
+        "agent": "I’m sorry you haven’t received it yet. I can contact the carrier to open a trace. Meanwhile, please check with neighbors. If not located in 48 hours, I’ll send a replacement or refund."
+    }
+]
+
+def build_prompt(new_query: str) -> str:
+    examples_text = "\n\n".join(
+        f"Customer: {ex['customer']}\nAgent: {ex['agent']}"
+        for ex in past_examples
+    )
+    prompt = f"""
+You are a polite and professional customer support assistant.
+
+Here are some past conversations:
+{examples_text}
+
+Now, draft a helpful reply to the NEW customer message:
+
+Customer: {new_query}
+
+Reply:
+"""
+    return prompt.strip()
+
+def suggest_reply(new_query: str) -> str:
+    prompt = build_prompt(new_query)
+    response = ollama.chat(model="qwen2.5:0.5b", messages=[
+        {"role": "system", "content": "You are a helpful customer support assistant."},
+        {"role": "user", "content": prompt}
+    ])
+    return response["message"]["content"].strip()
+
+if __name__ == "__main__":
+    new_customer_query = input("Please enter the customer query: ")
+    reply = suggest_reply(new_customer_query)
+
+    print("\nCustomer:", new_customer_query)
+    print("\nSuggested Reply:\n", reply)
+
+====================================================
+Exp5:
+!pip install pandas scikit-learn gradio ollama
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import gradio as gr
+import ollama
+data = {
+    "title": [
+        "Interstellar",
+        "Inception",
+        "The Martian",
+        "Blade Runner 2049",
+        "Gravity",
+        "The Social Network",
+        "Her"
+    ],
+    "description": [
+        "A team of explorers travel through a wormhole in space to ensure humanity's survival.",
+        "A thief who enters people's dreams to steal secrets.",
+        "An astronaut becomes stranded on Mars and must survive until rescue.",
+        "A blade runner unearths a long-buried secret that could alter society.",
+        "Astronauts attempt to return to Earth after debris destroys their shuttle.",
+        "The story of Facebook's creation and the ensuing lawsuits.",
+        "A man falls in love with an intelligent computer operating system."
+    ],
+    "genres": [
+        "Sci-Fi, Adventure, Drama",
+        "Sci-Fi, Action, Thriller",
+        "Sci-Fi, Drama",
+        "Sci-Fi, Mystery, Drama",
+        "Sci-Fi, Thriller, Drama",
+        "Biography, Drama",
+        "Romance, Sci-Fi, Drama"
+    ]
+}
+
+df = pd.DataFrame(data)
+df.head()
+
+df["combined"] = df["description"] + " " + df["genres"]
+
+vectorizer = TfidfVectorizer(stop_words="english")
+item_vectors = vectorizer.fit_transform(df["combined"])
+
+def parse_preferences_with_ollama(user_text):
+    prompt = f"""
+    Extract weighted keywords (0 to 1) from this user preference:
+    "{user_text}"
+    Return JSON like {{"sci-fi":0.9, "drama":0.8}}
+    """
+    response = ollama.chat(model="qwen2.5:0.5b", messages=[{"role":"user","content":prompt}])
+
+    try:
+        import json
+        weights = json.loads(response['message']['content'])
+    except:
+        weights = {}
+    return weights
+
+def recommend_items(user_text, top_n=3):
+    preferences = parse_preferences_with_ollama(user_text)
+
+    if not preferences:
+        user_keywords = user_text
+    else:
+        user_keywords = " ".join(
+            [f"{word} " * int(weight * 10) for word, weight in preferences.items()]
+        )
+
+    user_vec = vectorizer.transform([user_keywords])
+
+    similarities = cosine_similarity(user_vec, item_vectors).flatten()
+
+    top_indices = similarities.argsort()[-top_n:][::-1]
+    recommendations = df.iloc[top_indices][["title", "genres", "description"]]
+    return recommendations
+
+
+def gradio_recommender(user_input):
+    recs = recommend_items(user_input)
+    output = ""
+    for i, row in recs.iterrows():
+        output += f"**{row['title']}**\n*{row['genres']}*\n{row['description']}\n\n"
+    return output
+
+interface = gr.Interface(
+    fn=gradio_recommender,
+    inputs=gr.Textbox(label="Describe what you like", placeholder="e.g., I enjoy thoughtful sci-fi stories with deep characters"),
+    outputs=gr.Markdown(label="Recommended Movies"),
+    title="Personalized Recommendation System",
+    description="Enter your movie preferences in natural language and get top personalized recommendations."
+)
+
+interface.launch()
+
+====================================================
+Exp6:
+
+import gradio as gr
+import requests
+from PyPDF2 import PdfReader
+from docx import Document
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import json
+import nest_asyncio
+
+nest_asyncio.apply()
+
+OLLAMA_URL = "http://localhost:11434/api/generate"
+MODEL_NAME = "qwen2.5:0.5b"
+
+def extract_text(file):
+    filename = file.name
+    text = ""
+    if filename.endswith(".pdf"):
+        reader = PdfReader(filename)
+        for page in reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text + "\n"
+    elif filename.endswith(".docx"):
+        doc = Document(filename)
+        text = "\n".join([p.text for p in doc.paragraphs if p.text.strip() != ""])
+    elif filename.endswith(".txt"):
+        with open(filename, "r", encoding="utf-8") as f:
+            text = f.read()
+    else:
+        return "Unsupported file type."
+    return text.strip()
+
+def ollama_generate(prompt, max_tokens=1000):
+    try:
+        response = requests.post(
+            OLLAMA_URL,
+            json={
+                "model": MODEL_NAME,
+                "prompt": prompt,
+                "temperature": 0.2,
+                "max_tokens": max_tokens,
+                "stream": True,
+            },
+            stream=True,
+        )
+        full_output = ""
+        for line in response.iter_lines(decode_unicode=True):
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+                if "response" in obj:
+                    full_output += obj["response"]
+                if obj.get("done", False):
+                    break
+            except json.JSONDecodeError:
+                continue
+        return full_output.strip() if full_output else "No response content."
+    except Exception as e:
+        return f"❌ Error connecting to Ollama API: {e}"
+
+def analyze_document(file, summary_level, user_question):
+    text = extract_text(file)
+    if text.startswith("Unsupported"):
+        return text, "", ""
+    if summary_level == "Short":
+        level_instruction = "Summarize this in 1–2 sentences capturing only the main idea."
+    elif summary_level == "Medium":
+        level_instruction = "Summarize this in one paragraph highlighting all key points."
+    else:
+        level_instruction = "Provide a detailed section-wise summary with headings and key points."
+    summary_prompt = f"""
+You are an AI legal & literary content assistant.
+Analyze and summarize the document at the {summary_level} level.
+
+{level_instruction}
+
+Document:
+{text}
+"""
+    summary = ollama_generate(summary_prompt, max_tokens=800)
+    answer = ""
+    if user_question and user_question.strip():
+        qa_prompt = f"""
+You are an AI assistant. The document content is:
+
+{text}
+
+Answer the following question accurately and concisely:
+Question: {user_question}
+"""
+        answer = ollama_generate(qa_prompt, max_tokens=400)
+    key_prompt = f"""
+Extract the key themes, keywords, or clauses from this document.
+For legal text: focus on Payment Terms, Liabilities, Confidentiality, Termination.
+For literary text: focus on Characters, Plot, Themes, Moral Lessons.
+
+Text:
+{text}
+"""
+    keywords = ollama_generate(key_prompt, max_tokens=500)
+    return summary, answer, keywords
+
+def export_content(summary, answer, keywords, format_type):
+    output_path = f"Document_Analysis.{format_type.lower()}"
+    if format_type == "pdf":
+        c = canvas.Canvas(output_path, pagesize=letter)
+        c.setFont("Helvetica", 11)
+        y = 750
+        for line in (f"SUMMARY:\n{summary}\n\nQ&A:\n{answer}\n\nKEYWORDS:\n{keywords}".split("\n")):
+            c.drawString(40, y, line[:110])
+            y -= 15
+            if y < 50:
+                c.showPage()
+                y = 750
+        c.save()
+    elif format_type == "docx":
+        doc = Document()
+        doc.add_heading("AI Document Analysis", level=1)
+        doc.add_heading("Summary", level=2)
+        doc.add_paragraph(summary)
+        if answer:
+            doc.add_heading("Q&A", level=2)
+            doc.add_paragraph(answer)
+        doc.add_heading("Keywords / Key Clauses", level=2)
+        doc.add_paragraph(keywords)
+        doc.save(output_path)
+    elif format_type == "txt":
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(f"SUMMARY:\n{summary}\n\nQ&A:\n{answer}\n\nKEYWORDS:\n{keywords}")
+    return f"✅ Exported successfully as {output_path}"
+
+def main_ui():
+    with gr.Blocks(theme=gr.themes.Soft()) as demo:
+        gr.Markdown("# AI Document Analyzer: Summarize, Query, Export")
+        gr.Markdown(
+            "Upload **PDF**, **DOCX**, or **TXT** files to analyze. "
+            "You can select summary level, ask questions, and export results."
+        )
+        with gr.Tab("Upload & Analyze"):
+            file_input = gr.File(file_types=[".pdf", ".docx", ".txt"], label="Upload Document")
+            summary_level = gr.Radio(["Short", "Medium", "Detailed"], label="Select Summary Level", value="Medium")
+            user_question = gr.Textbox(lines=2, placeholder="Optional: Ask a question about the document")
+            analyze_button = gr.Button("Analyze Document")
+        with gr.Tab("Summary"):
+            summary_output = gr.Textbox(label="Generated Summary", lines=10)
+        with gr.Tab("Q&A"):
+            qa_output = gr.Textbox(label="Answer", lines=6)
+        with gr.Tab("Keywords / Clauses"):
+            keyword_output = gr.Textbox(label="Extracted Keywords or Clauses", lines=8)
+        with gr.Tab("Export & Reporting"):
+            export_format = gr.Radio(["pdf", "docx", "txt"], label="Select Export Format", value="pdf")
+            export_button = gr.Button("Export Result")
+            export_message = gr.Textbox(label="Export Status")
+        analyze_button.click(
+            fn=analyze_document,
+            inputs=[file_input, summary_level, user_question],
+            outputs=[summary_output, qa_output, keyword_output],
+        )
+        export_button.click(
+            fn=export_content,
+            inputs=[summary_output, qa_output, keyword_output, export_format],
+            outputs=export_message,
+        )
+    demo.launch(share=False, prevent_thread_lock=True)
+
+if __name__ == "__main__":
+    main_ui()
+
+====================================================
+Exp7:
+
+import requests
+import datetime
+OLLAMA_URL = "http://localhost:11434/api/generate"
+MODEL_NAME = "qwen2.5:0.5b"
+knowledge_base = {
+    "cold": {
+        "keywords": ["sneeze", "runny nose", "congestion", "cough"],
+        "advice": "It may be a common cold. Rest, drink warm fluids, and consider over-the-counter cold remedies.",
+        "severity": "Mild"
+    },
+    "flu": {
+        "keywords": ["fever", "body ache", "chills", "fatigue"],
+        "advice": "It may be the flu. Stay hydrated, rest, and monitor your temperature.",
+        "severity": "Moderate"
+    },
+    "migraine": {
+        "keywords": ["headache", "nausea", "sensitivity to light", "sensitivity to sound"],
+        "advice": "It may be a migraine. Rest in a quiet, dark room and consider over-the-counter pain relief.",
+        "severity": "Moderate"
+    },
+    "indigestion": {
+        "keywords": ["stomach pain", "nausea", "bloating", "heartburn"],
+        "advice": "It may be indigestion. Avoid spicy food, drink water, and try small light meals.",
+        "severity": "Mild"
+    },
+    "heart attack": {
+        "keywords": ["chest pain", "shortness of breath", "pain in left arm", "dizziness"],
+        "advice": "These may be signs of a heart attack. Seek emergency medical help immediately!",
+        "severity": "Severe"
+    }
+}
+conversation_history = []
+def check_knowledge_base(symptoms):
+    for condition, data in knowledge_base.items():
+        if any(word in symptoms.lower() for word in data["keywords"]):
+            return {
+                "condition": condition,
+                "advice": data["advice"],
+                "severity": data["severity"]
+            }
+    return None
+def ollama_response(symptoms):
+    prompt = f"""
+    You are an AI medical assistant.
+    Analyze the following symptoms and provide:
+    1. Possible common causes.
+    2. Basic home care advice.
+    3. When to seek professional help.
+    4. Always include a disclaimer: "I am not a doctor. Consult a professional for accurate diagnosis."
+
+    Symptoms: {symptoms}
+    """
+    payload = {"model": MODEL_NAME, "prompt": prompt, "stream": False}
+    try:
+        response = requests.post(OLLAMA_URL, json=payload)
+        if response.status_code == 200:
+            return response.json().get("response", "").strip()
+        else:
+            return f"Error from Ollama: {response.text}"
+    except Exception as e:
+        return f"Error connecting to Ollama: {e}"
+def medical_assistant(symptoms):
+    record = {"user": symptoms}
+    kb_result = check_knowledge_base(symptoms)
+    if kb_result:
+        response = f"Possible Condition: {kb_result['condition'].title()}\n" \
+                   f"Severity: {kb_result['severity']}\n" \
+                   f"Advice: {kb_result['advice']}"
+        if kb_result["severity"] == "Severe":
+            response += "\nEMERGENCY ALERT: Seek immediate medical attention!"
+    else:
+        response = ollama_response(symptoms)
+    record["assistant"] = response
+    conversation_history.append(record)
+    return response
+def export_health_report():
+    if not conversation_history:
+        print("No conversation history to export.")
+        return
+    filename = f"health_report_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write("AI-Powered Medical Assistant – Health Report\n")
+        f.write("=" * 60 + "\n\n")
+        for i, item in enumerate(conversation_history, 1):
+            f.write(f"Interaction {i}\n")
+            f.write(f"User: {item['user']}\n")
+            f.write(f"Assistant: {item['assistant']}\n")
+            f.write("-" * 60 + "\n")
+    print(f"Health report exported as {filename}")
+if __name__ == "__main__":
+    print("AI-Powered Medical Assistant")
+    print("Type 'exit' to quit, or 'report' to export your health summary.\n")
+
+    while True:
+        user_input = input("Enter your symptoms: ").strip()
+        if user_input.lower() == "exit":
+            print("Goodbye! Stay healthy.")
+            break
+        elif user_input.lower() == "report":
+            export_health_report()
+            continue
+        print("\nAssistant Response:\n")
+        print(medical_assistant(user_input))
+        print("\n" + "=" * 60 + "\n")
+
