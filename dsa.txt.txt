@@ -1,3 +1,25 @@
+import gradio as gr
+import ollama 
+with open('ep.csv','r',encoding='utf-8') as f:
+    data=f.read()
+prompt=f"""
+you are a ai assistent.give me a answer from the dataset which you have read.dont think from outside.
+suppose you dont have take the answer from dataset give the answer like i dont have the answer give me the
+correct question.
+{data}
+"""
+def travel(message,history):
+    messages=[{'role':'system','content':'prompt'}]
+    for user_msg,bot_msg in history:
+        messages.append({'role':'user','content':'user_msg'})
+        messages.append({'role':'assistent','content':'bot_msg'})
+    messages.append({'role':'user','content':'message'})
+    response=ollama.chat(model='qwen2.5:0.5b',messages=messages)
+    return response['message']['content']
+gr.ChatInterface(fn=travel,title="herwin",theme="soft").launch()
+        
+        
+        
 EXP 1:
 git init 
 git add .
@@ -450,3 +472,4 @@ In this lab, you learned how to:
 4. Expose Deployments as services.
 
 5. Clean up resources safely.
+
